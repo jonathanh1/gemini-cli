@@ -82,9 +82,14 @@ describe('setupGithubCommand', async () => {
 
     const { command } = result.toolArgs;
 
+    // Should not contain any open commands
+    expect(command).not.toContain('fakeOpenCommand');
+
     const expectedSubstrings = [
       `set -eEuo pipefail`,
-      `fakeOpenCommand "https://github.com/google-github-actions/run-gemini-cli`,
+      `echo "Successfully downloaded`,
+      `echo "1. Get a Gemini API Key from https://aistudio.google.com/apikey"`,
+      `echo "2. Add it as a GitHub Secret named GEMINI_API_KEY in your repository settings: https://github.com/${fakeRepoOwner}/${fakeRepoName}/settings/secrets/actions"`,
     ];
 
     for (const substring of expectedSubstrings) {
