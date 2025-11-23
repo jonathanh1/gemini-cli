@@ -16,7 +16,8 @@ describe('getMCPServerPrompts', () => {
       {
         name: 'prompt1',
         serverName: 'server1',
-        tool: { name: 'p1', description: '', inputSchema: {} },
+        description: '',
+        arguments: [],
         invoke: async () => ({
           messages: [
             { role: 'assistant', content: { type: 'text', text: '' } },
