@@ -21,11 +21,8 @@ describe('PromptRegistry', () => {
   const prompt1: DiscoveredMCPPrompt = {
     name: 'prompt1',
     serverName: 'server1',
-    tool: {
-      name: 'prompt1',
-      description: 'Prompt 1',
-      inputSchema: {},
-    },
+    description: 'Prompt 1',
+    arguments: [],
     invoke: async () => ({
       messages: [
         { role: 'assistant', content: { type: 'text', text: 'response1' } },
@@ -36,11 +33,8 @@ describe('PromptRegistry', () => {
   const prompt2: DiscoveredMCPPrompt = {
     name: 'prompt2',
     serverName: 'server1',
-    tool: {
-      name: 'prompt2',
-      description: 'Prompt 2',
-      inputSchema: {},
-    },
+    description: 'Prompt 2',
+    arguments: [],
     invoke: async () => ({
       messages: [
         { role: 'assistant', content: { type: 'text', text: 'response2' } },
@@ -51,11 +45,8 @@ describe('PromptRegistry', () => {
   const prompt3: DiscoveredMCPPrompt = {
     name: 'prompt1',
     serverName: 'server2',
-    tool: {
-      name: 'prompt1',
-      description: 'Prompt 3',
-      inputSchema: {},
-    },
+    description: 'Prompt 3',
+    arguments: [],
     invoke: async () => ({
       messages: [
         { role: 'assistant', content: { type: 'text', text: 'response3' } },
