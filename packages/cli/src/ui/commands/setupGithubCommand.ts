@@ -19,7 +19,6 @@ import {
 
 import type { SlashCommand, SlashCommandActionReturn } from './types.js';
 import { CommandKind } from './types.js';
-import { getUrlOpenCommand } from '../../ui/utils/commandUtils.js';
 import { debugLogger } from '@google/gemini-cli-core';
 
 export const GITHUB_WORKFLOW_PATHS = [
@@ -29,26 +28,6 @@ export const GITHUB_WORKFLOW_PATHS = [
   'issue-triage/gemini-scheduled-triage.yml',
   'pr-review/gemini-review.yml',
 ];
-
-// Generate OS-specific commands to open the GitHub pages needed for setup.
-function getOpenUrlsCommands(readmeUrl: string): string[] {
-  // Determine the OS-specific command to open URLs, ex: 'open', 'xdg-open', etc
-  const openCmd = getUrlOpenCommand();
-
-  // Build a list of URLs to open
-  const urlsToOpen = [readmeUrl];
-
-  const repoInfo = getGitHubRepoInfo();
-  if (repoInfo) {
-    urlsToOpen.push(
-      `https://github.com/${repoInfo.owner}/${repoInfo.repo}/settings/secrets/actions`,
-    );
-  }
-
-  // Create and join the individual commands
-  const commands = urlsToOpen.map((url) => `${openCmd} "${url}"`);
-  return commands;
-}
 
 // Add Gemini CLI specific entries to .gitignore file
 export async function updateGitignore(gitRepoRoot: string): Promise<void> {
@@ -192,9 +171,22 @@ export const setupGithubCommand: SlashCommand = {
     const commands = [];
     commands.push('set -eEuo pipefail');
     commands.push(
-      `echo "Successfully downloaded ${GITHUB_WORKFLOW_PATHS.length} workflows and updated .gitignore. Follow the steps in ${readmeUrl} (skipping the /setup-github step) to complete setup."`,
+      `echo "Successfully downloaded ${GITHUB_WORKFLOW_PATHS.length} workflows and updated .gitignore."`,
     );
-    commands.push(...getOpenUrlsCommands(readmeUrl));
+    commands.push(`echo ""`);
+    commands.push(`echo "To complete setup:"`);
+    commands.push(
+      `echo "1. Get a Gemini API Key from https://aistudio.google.com/apikey"`,
+    );
+
+    const repoInfo = getGitHubRepoInfo();
+    const secretsUrl = repoInfo
+      ? `https://github.com/${repoInfo.owner}/${repoInfo.repo}/settings/secrets/actions`
+      : 'https://github.com/<owner>/<repo>/settings/secrets/actions';
+
+    commands.push(
+      `echo "2. Add it as a GitHub Secret named GEMINI_API_KEY in your repository settings: ${secretsUrl}"`,
+    );
 
     const command = `(${commands.join(' && ')})`;
     return {
