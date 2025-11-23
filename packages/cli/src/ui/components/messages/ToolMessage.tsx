@@ -24,6 +24,7 @@ import { theme } from '../../semantic-colors.js';
 import type { AnsiOutput, Config } from '@google/gemini-cli-core';
 import { useUIState } from '../../contexts/UIStateContext.js';
 import { useAlternateBuffer } from '../../hooks/useAlternateBuffer.js';
+import { LinkifiedText } from '../shared/LinkifiedText.js';
 
 const STATIC_HEIGHT = 1;
 const RESERVED_LINE_COUNT = 5; // for tool name, status, padding etc.
@@ -154,16 +155,16 @@ export const ToolMessage: React.FC<ToolMessageProps> = ({
             !renderOutputAsMarkdown ? (
             isAlternateBuffer ? (
               <Box flexDirection="column" width={childWidth}>
-                <Text wrap="wrap" color={theme.text.primary}>
+                <LinkifiedText wrap="wrap" color={theme.text.primary}>
                   {truncatedResultDisplay}
-                </Text>
+                </LinkifiedText>
               </Box>
             ) : (
               <MaxSizedBox maxHeight={availableHeight} maxWidth={childWidth}>
                 <Box>
-                  <Text wrap="wrap" color={theme.text.primary}>
+                  <LinkifiedText wrap="wrap" color={theme.text.primary}>
                     {truncatedResultDisplay}
-                  </Text>
+                  </LinkifiedText>
                 </Box>
               </MaxSizedBox>
             )
