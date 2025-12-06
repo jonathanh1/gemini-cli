@@ -9,6 +9,7 @@ import { Box, Text } from 'ink';
 import Link from 'ink-link';
 import type { AnsiLine, AnsiOutput, AnsiToken } from '@google/gemini-cli-core';
 import { URL_REGEX, isUrl } from '../utils/urlUtils.js';
+import { theme } from '../semantic-colors.js';
 
 const DEFAULT_HEIGHT = 24;
 
@@ -36,7 +37,12 @@ export const AnsiOutputText: React.FC<AnsiOutputProps> = ({
       const key = `${keyPrefix}-${index}`;
 
       const textProps = {
-        color: token.inverse ? token.bg : token.fg,
+        color:
+          partIsUrl && !token.inverse
+            ? theme.text.link
+            : token.inverse
+              ? token.bg
+              : token.fg,
         backgroundColor: token.inverse ? token.fg : token.bg,
         dimColor: token.dim,
         bold: token.bold,
