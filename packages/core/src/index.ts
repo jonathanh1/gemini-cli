@@ -21,6 +21,7 @@ export * from './confirmation-bus/message-bus.js';
 // Export Commands logic
 export * from './commands/extensions.js';
 export * from './commands/restore.js';
+export * from './commands/init.js';
 export * from './commands/types.js';
 
 // Export Core Logic
@@ -106,6 +107,8 @@ export * from './tools/tool-error.js';
 export * from './tools/tool-registry.js';
 export * from './tools/tool-names.js';
 export * from './resources/resource-registry.js';
+export * from './agents/registry.js';
+export * from './agents/types.js';
 
 // Export prompt logic
 export * from './prompts/mcp-prompts.js';
