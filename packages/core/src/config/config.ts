@@ -324,6 +324,7 @@ export interface ConfigParameters {
   enableAgents?: boolean;
   enableModelAvailabilityService?: boolean;
   experimentalJitContext?: boolean;
+  enablePlanReuse?: boolean;
 }
 
 export class Config {
@@ -446,6 +447,7 @@ export class Config {
   private previewModelBypassMode = false;
   private readonly enableModelAvailabilityService: boolean;
   private readonly enableAgents: boolean;
+  private readonly enablePlanReuse: boolean;
 
   private readonly experimentalJitContext: boolean;
   private contextManager?: ContextManager;
@@ -511,6 +513,7 @@ export class Config {
     this.enableModelAvailabilityService =
       params.enableModelAvailabilityService ?? false;
     this.enableAgents = params.enableAgents ?? false;
+    this.enablePlanReuse = params.enablePlanReuse ?? false;
     this.experimentalJitContext = params.experimentalJitContext ?? false;
     this.modelAvailabilityService = new ModelAvailabilityService();
     this.previewFeatures = params.previewFeatures ?? undefined;
@@ -1255,6 +1258,10 @@ export class Config {
 
   isAgentsEnabled(): boolean {
     return this.enableAgents;
+  }
+
+  isPlanReuseEnabled(): boolean {
+    return this.enablePlanReuse;
   }
 
   getNoBrowser(): boolean {

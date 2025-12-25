@@ -57,6 +57,8 @@ import {
   fireBeforeModelHook,
   fireBeforeToolSelectionHook,
 } from './geminiChatHookTriggers.js';
+import { PlanReuseService } from '../services/planReuseService.js';
+import { FunctionCallPart } from '@google/genai';
 
 export enum StreamEventType {
   /** A regular content chunk from the API. */
@@ -213,6 +215,7 @@ export class GeminiChat {
   private sendPromise: Promise<void> = Promise.resolve();
   private readonly chatRecordingService: ChatRecordingService;
   private lastPromptTokenCount: number;
+  private planReuseService: PlanReuseService;
 
   constructor(
     private readonly config: Config,
@@ -227,6 +230,7 @@ export class GeminiChat {
     this.lastPromptTokenCount = estimateTokenCountSync(
       this.history.flatMap((c) => c.parts || []),
     );
+    this.planReuseService = new PlanReuseService(config);
   }
 
   setSystemInstruction(sysInstr: string) {
@@ -295,6 +299,74 @@ export class GeminiChat {
 
     // Add user content to history ONCE before any attempts.
     this.history.push(userContent);
+
+    // PlanReuse: Save successful plans (Tool Response Handling)
+    if (this.config.isPlanReuseEnabled() && isFunctionResponse(userContent)) {
+      const history = this.getHistory(false);
+      // History now contains: [...prev, userContent].
+      // We want to look at prev turns.
+      // userContent is the Tool Response.
+      // history[history.length - 1] is userContent.
+      // history[history.length - 2] should be the Model (Tool Call).
+      // history[history.length - 3] should be the User (Request).
+      if (history.length >= 3) {
+        const toolCallTurn = history[history.length - 2];
+        const userRequestTurn = history[history.length - 3];
+
+        if (toolCallTurn.role === 'model' && userRequestTurn.role === 'user') {
+          // Check for errors in the current response
+          const hasError = userContent.parts?.some(
+            (p) => p.functionResponse?.response?.['error'],
+          );
+
+          // Get the user text
+          const userText = userRequestTurn.parts?.find((p) => p.text)?.text;
+
+          // Get tool calls
+          const toolCalls = toolCallTurn.parts?.filter(
+            (p) => p.functionCall,
+          ) as FunctionCallPart[];
+
+          if (!hasError && userText && toolCalls && toolCalls.length > 0) {
+            // Fire and forget save
+            this.planReuseService
+              .savePlan(userText, toolCalls)
+              .catch((e) => console.error('PlanReuseService save failed:', e));
+          }
+        }
+      }
+    }
+    // PlanReuse: Check for cache hit (User Request Handling)
+    else if (this.config.isPlanReuseEnabled()) {
+      const userText = userContent.parts?.find((p) => p.text)?.text;
+      if (userText) {
+        const match = await this.planReuseService.findMatch(userText);
+        if (match.hit && match.hydratedToolCalls) {
+          const syntheticResponse: GenerateContentResponse = {
+            candidates: [
+              {
+                content: {
+                  role: 'model',
+                  parts: match.hydratedToolCalls,
+                },
+                finishReason: FinishReason.STOP,
+              },
+            ],
+          };
+
+          this.history.push({ role: 'model', parts: match.hydratedToolCalls });
+
+          return (async function* () {
+            try {
+              yield { type: StreamEventType.CHUNK, value: syntheticResponse };
+            } finally {
+              streamDoneResolver!();
+            }
+          })();
+        }
+      }
+    }
+
     const requestContents = this.getHistory(true);
 
     const streamWithRetries = async function* (
