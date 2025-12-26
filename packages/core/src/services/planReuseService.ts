@@ -6,12 +6,10 @@
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { distance } from 'ml-distance';
 import { Config } from '../config/config.js';
-import { ContentEmbedding, FunctionCallPart, Part, Tool } from '@google/genai';
+import { type Part, type Tool } from '@google/genai';
 import {
-  GenerateContentConfig,
-  GoogleGenerativeAI,
+  GoogleGenAI as GoogleGenerativeAI,
 } from '@google/genai';
 import {
   DEFAULT_GEMINI_MODEL,
@@ -43,7 +41,7 @@ export interface MatchResult {
   hit: boolean;
   plan?: CachedPlan;
   parameters?: Record<string, string>;
-  hydratedToolCalls?: FunctionCallPart[];
+  hydratedToolCalls?: Part[];
 }
 
 const ROUTER_MODEL = 'gemini-3-flash-preview';
@@ -72,15 +70,14 @@ export class PlanReuseService {
     // Config doesn't expose apiKey directly sometimes.
     // But we can use the ContentGenerator or create a new client.
     // Let's reuse the config to get the apiKey if possible, or assume the environment is set up.
-    // Looking at `packages/core/src/core/client.ts`, it uses `config.getParams().apiKey`.
-    const apiKey = config.getParams().apiKey || process.env.GOOGLE_API_KEY;
+    const apiKey = config.getContentGeneratorConfig()?.apiKey || process.env.GOOGLE_API_KEY;
     if (!apiKey) {
       // If we can't find an API key, we might need to rely on the existing client logic.
       // But for this service, we'll try to instantiate a lightweight client if we can.
       // If not, we might fail to route.
       console.warn('PlanReuseService: No API Key found, routing will be disabled.');
     }
-    this.genaiClient = new GoogleGenerativeAI(apiKey || 'dummy');
+    this.genaiClient = new GoogleGenerativeAI({ apiKey: apiKey || 'dummy' });
   }
 
   async initialize(): Promise<void> {
@@ -117,13 +114,7 @@ export class PlanReuseService {
       let maxSimilarity = -1;
 
       for (const plan of this.cache) {
-        // ml-distance cosine is distance (1 - similarity? or just distance?)
-        // ml-distance exports 'similarity.cosine' usually.
-        // Wait, 'ml-distance' documentation says `distance.cosine`.
-        // Cosine distance = 1 - Cosine Similarity.
-        // So Similarity = 1 - Distance.
-        const dist = distance.cosine(embedding, plan.embedding);
-        const similarity = 1 - dist;
+        const similarity = this.cosineSimilarity(embedding, plan.embedding);
 
         if (similarity > maxSimilarity) {
           maxSimilarity = similarity;
@@ -203,7 +194,7 @@ Output JSON:
     }
   }
 
-  hydrateTemplate(template: ToolCallTemplate[], parameters: Record<string, string>): FunctionCallPart[] {
+  hydrateTemplate(template: ToolCallTemplate[], parameters: Record<string, string>): Part[] {
     return template.map(tool => {
       const hydratedArgs: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(tool.args)) {
@@ -228,7 +219,7 @@ Output JSON:
     });
   }
 
-  async savePlan(userRequest: string, toolCalls: FunctionCallPart[]): Promise<void> {
+  async savePlan(userRequest: string, toolCalls: Part[]): Promise<void> {
     await this.initialize();
 
     // Deduplication check: Check if an identical request already exists (simple heuristic)
@@ -260,8 +251,7 @@ Output JSON:
 
     // Check similarity to avoid near-duplicates
     for (const plan of this.cache) {
-      const dist = distance.cosine(embedding, plan.embedding);
-      const similarity = 1 - dist;
+      const similarity = this.cosineSimilarity(embedding, plan.embedding);
       if (similarity > 0.98) { // Very high threshold for "duplicate"
          // Already covered.
          return;
@@ -285,7 +275,7 @@ Output JSON:
     await this.saveCache();
   }
 
-  generalizeToolCalls(toolCalls: FunctionCallPart[], parameters: Record<string, string>): ToolCallTemplate[] {
+  generalizeToolCalls(toolCalls: Part[], parameters: Record<string, string>): ToolCallTemplate[] {
     // Reverse hydration: find parameter values in tool args and replace with {{key}}
     return toolCalls.map(tc => {
       const args = tc.functionCall?.args || {};
@@ -326,5 +316,17 @@ Output JSON:
     } catch (error) {
       console.error('Failed to save plan cache:', error);
     }
+  }
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let i = 0; i < a.length; i++) {
+      dotProduct += a[i] * b[i];
+      normA += a[i] * a[i];
+      normB += b[i] * b[i];
+    }
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 }

@@ -8,18 +8,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlanReuseService } from './planReuseService.js';
 import { Config } from '../config/config.js';
 import * as fs from 'node:fs/promises';
-import { GoogleGenerativeAI } from '@google/genai';
-
-// Mock ml-distance
-vi.mock('ml-distance', () => ({
-  distance: {
-    cosine: vi.fn(),
-  },
-}));
+import { GoogleGenAI } from '@google/genai';
 
 // Mock GoogleGenerativeAI
 vi.mock('@google/genai', () => ({
-  GoogleGenerativeAI: vi.fn(),
+  GoogleGenAI: vi.fn(),
   FunctionCallPart: vi.fn(),
   Part: vi.fn(),
   ThinkingLevel: { HIGH: 'HIGH' }, // Mock ThinkingLevel
@@ -39,6 +32,7 @@ describe('PlanReuseService', () => {
       },
       getParams: () => ({ apiKey: 'test-key' }),
       getEmbeddingModel: () => 'test-embedding-model',
+      getContentGeneratorConfig: () => ({ apiKey: 'test-key' }),
     } as unknown as Config;
 
     mockModel = {
@@ -50,7 +44,7 @@ describe('PlanReuseService', () => {
       getGenerativeModel: vi.fn().mockReturnValue(mockModel),
     };
 
-    (GoogleGenerativeAI as unknown as any).mockImplementation(() => mockGenAI);
+    (GoogleGenAI as unknown as any).mockImplementation(() => mockGenAI);
 
     service = new PlanReuseService(mockConfig);
   });

@@ -58,7 +58,7 @@ import {
   fireBeforeToolSelectionHook,
 } from './geminiChatHookTriggers.js';
 import { PlanReuseService } from '../services/planReuseService.js';
-import { FunctionCallPart } from '@google/genai';
+import type { FunctionCallPart } from '@google/genai';
 
 export enum StreamEventType {
   /** A regular content chunk from the API. */

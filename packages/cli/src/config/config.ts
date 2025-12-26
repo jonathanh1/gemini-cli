@@ -643,6 +643,7 @@ export async function loadCliConfig(
     enableModelAvailabilityService:
       settings.experimental?.isModelAvailabilityServiceEnabled,
     experimentalJitContext: settings.experimental?.jitContext,
+    enablePlanReuse: settings.experimental?.enablePlanReuse,
     noBrowser: !!process.env['NO_BROWSER'],
     summarizeToolOutput: settings.model?.summarizeToolOutput,
     ideMode,

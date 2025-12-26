@@ -577,6 +577,15 @@ const SETTINGS_SCHEMA = {
           },
         },
       },
+      enablePlanReuse: {
+        type: 'boolean',
+        label: 'Enable Plan Reuse',
+        category: 'Experimental',
+        requiresRestart: true,
+        default: false,
+        description: 'Enable semantic plan reuse to reduce latency.',
+        showInDialog: true,
+      },
     },
   },
 
