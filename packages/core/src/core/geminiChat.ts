@@ -342,27 +342,22 @@ export class GeminiChat {
       if (userText) {
         const match = await this.planReuseService.findMatch(userText);
         if (match.hit && match.hydratedToolCalls) {
-          const syntheticResponse: GenerateContentResponse = {
-            candidates: [
-              {
-                content: {
-                  role: 'model',
-                  parts: match.hydratedToolCalls,
-                },
-                finishReason: FinishReason.STOP,
-              },
-            ],
-          };
+          // Instead of executing immediately, inject as a hint
+          const toolCall = match.hydratedToolCalls[0];
+          if (toolCall.functionCall) {
+            const hint = `\n\n[System Hint: A similar successful plan was found for this request. Consider using tool "${toolCall.functionCall.name}" with arguments: ${JSON.stringify(toolCall.functionCall.args)}]`;
 
-          this.history.push({ role: 'model', parts: match.hydratedToolCalls });
-
-          return (async function* () {
-            try {
-              yield { type: StreamEventType.CHUNK, value: syntheticResponse };
-            } finally {
-              streamDoneResolver!();
+            // Append hint to the user's message in the history
+            const lastUserMessage = this.history[this.history.length - 1];
+            if (lastUserMessage.role === 'user' && lastUserMessage.parts) {
+              const textPart = lastUserMessage.parts.find((p) => p.text);
+              if (textPart) {
+                textPart.text += hint;
+              } else {
+                lastUserMessage.parts.push({ text: hint });
+              }
             }
-          })();
+          }
         }
       }
     }
