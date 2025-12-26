@@ -12,6 +12,7 @@
     "build": "node ../../scripts/build_package.js",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
+    "benchmark": "ts-node scripts/benchmark_agent_reuse.ts",
     "test": "vitest run",
     "test:ci": "vitest run",
     "typecheck": "tsc --noEmit"
